@@ -71,10 +71,17 @@ func (c *Client) applyTimeout() {
 }
 
 func (c *Client) applyCookies() {
-	if c.Cookies != nil {
-		jar, _ := cookiejar.New(nil)
-		jar.SetCookies(&url.URL{Scheme: c.requestURL.scheme(), Host: c.requestURL.host()}, c.Cookies)
-		c.client.Jar = jar
+	if c.Jar != nil {
+		if c.Cookies != nil {
+			c.client.Jar.SetCookies(&url.URL{Scheme: c.requestURL.scheme(), Host: c.requestURL.host()}, c.Cookies)
+		}
+		c.client.Jar = c.Jar
+	} else {
+		if c.Cookies != nil {
+			jar, _ := cookiejar.New(nil)
+			jar.SetCookies(&url.URL{Scheme: c.requestURL.scheme(), Host: c.requestURL.host()}, c.Cookies)
+			c.client.Jar = jar
+		}
 	}
 }
 

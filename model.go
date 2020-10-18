@@ -3,6 +3,7 @@ package request
 import (
 	"crypto/tls"
 	"net/http"
+	"net/http/cookiejar"
 	"time"
 )
 
@@ -38,6 +39,7 @@ type Client struct {
 	ProxyURL    string
 	ContentType ContentType
 	Cookies     []*http.Cookie
+	Jar         *cookiejar.Jar
 	TLSConfig   *tls.Config
 	Transport   *http.Transport
 

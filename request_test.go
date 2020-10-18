@@ -1,8 +1,11 @@
 package request
 
 import (
+	"encoding/json"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -508,6 +511,74 @@ func TestClient_Do_Cookies(t *testing.T) {
 				t.Errorf("Do() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+		})
+	}
+}
+
+type cookieResponse struct {
+	Cookies map[string]string `json:"cookies"`
+}
+
+func TestClient_Do_Cookies_Jar(t *testing.T) {
+	jar, _ := cookiejar.New(nil)
+	u, _ := url.Parse(serverURL)
+	var cookies []*http.Cookie
+	cookie := &http.Cookie{
+		Name:   "testingName",
+		Value:  "testingValue",
+		Path:   "/",
+		Domain: ".httpbin.org",
+	}
+	cookies = append(cookies, cookie)
+
+	jar.SetCookies(u, cookies)
+
+	type fields struct {
+		URL    string
+		Method string
+		Jar    *cookiejar.Jar
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    []byte
+		wantErr bool
+	}{
+		{
+			name: "cookie",
+			fields: fields{
+				URL:    serverURL + "/cookies",
+				Method: "GET",
+				Jar:    jar,
+			},
+			want:    nil,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Client{
+				URL:    tt.fields.URL,
+				Method: tt.fields.Method,
+				Jar:    tt.fields.Jar,
+			}
+			resp, err := c.Do()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Do() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			var f cookieResponse
+			if err := json.Unmarshal([]byte(resp.Data), &f); err != nil {
+				t.Errorf("JSON parsing error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if val, ok := f.Cookies["testingName"]; ok {
+				if val != "testingValue" {
+					t.Errorf("Cookie value incorrect = %v, wantErr %v", err, tt.wantErr)
+				}
+			} else {
+				t.Errorf("Cookie key incorrect = %v, wantErr %v", err, tt.wantErr)
+			}
+
 		})
 	}
 }
